@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Karnafully's Birthday Chaos 🎉</title>
+  <style>
+    /* ---- Theme & reset ---- */
+    :root{
+      --bg-1:#0b0420; --bg-2:#24123a; --card: rgba(255,255,255,0.06);
+      --accent1:#ff8ac6; --accent2:#ffd36b; --accent3:#7dd3fc;
+      --glass-border: rgba(255,255,255,0.06);
+      --text:#ffffff;
+      --shadow: 0 8px 30px rgba(8,8,20,0.6);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;color:var(--text);background:linear-gradient(180deg,var(--bg-1) 0%, var(--bg-2) 70%);-webkit-font-smoothing:antialiased}
+    a{color:inherit}
+    .center{display:flex;align-items:center;justify-content:center}
+
+    /* ---- common UI ---- */
+    .glass{background:linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));border:1px solid var(--glass-border);backdrop-filter: blur(6px) saturate(120%);padding:18px;border-radius:12px;box-shadow:var(--shadow)}
+    .glow-btn{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#140421;border:none;padding:12px 20px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 8px 30px rgba(255,140,180,0.12);transition:transform .15s ease, box-shadow .15s}
+    .glow-btn:focus{outline:3px solid rgba(255,255,255,0.06);outline-offset:3px}
+    .glow-btn:hover{transform:translateY(-3px) scale(1.02)}
+    h1,h2,h3{margin:0}
+    .muted{opacity:0.78}
+
+    /* ---- layout ---- */
+    .stage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px}
+    .stack{display:flex;flex-direction:column;gap:18px;max-width:980px;width:100%}
+
+    /* landing */
+    .landing .title{font-size:48px;font-weight:800;letter-spacing:1px}
+    .landing .sub{font-size:20px}
+
+    /* countdown */
+    .count{font-size:120px;font-weight:900}
+
+    /* small cards grid */
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+
+    /* canvas containers */
+    .canvas-full{position:fixed;inset:0;pointer-events:none}
+    .firework-overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center}
+
+    /* responsive */
+    @media (max-width:640px){
+      .landing .title{font-size:28px}
+      .count{font-size:72px}
+      .glow-btn{padding:10px 14px}
+    }
+
+    /* reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .glow-btn{transition:none}
+    }
+
+    /* small helpers */
+    .center-vertical{display:flex;flex-direction:column;align-items:center}
+    .inline-muted{opacity:0.8}
+    .small{font-size:13px}
+  </style>
+</head>
+<body>
+
+<!-- Central config: edit names/messages here -->
+<script>
+  const CFG = {
+    birthdayGirl: 'Karnafully Shaha',
+    creator: 'Avijit Sarker',
+    introMessage: "It's your birthday. Unfortunately, Avijit made you a website.",
+    finalMessage: `Happy Birthday, Karnafully!\nWishing you an amazing year ahead.`,
+    reasons: [
+      "Because you're a certified chaos generator 😂",
+      "Because conversations with you are never normal.",
+      "Because birthdays are obviously better with unnecessary drama.",
+      "Because somehow you always make things hilarious.",
+      "Because you survive your own chaos.",
+      "Because your snack game is strong.",
+      "Because you deserve unlimited cake.",
+      "Because you bring unexpected energy.",
+      "Because normal is boring.",
+      "Because you're a legend in your own timeline."
+    ],
+    randomMessages: [
+      "You're officially one year more experienced. 🎉",
+      "You survived another year. Congratulations.",
+      "Today you are legally allowed to eat unreasonable amounts of cake.",
+      "May your Wi-Fi be strong and your problems be weak.",
+      "10/10 birthday human. Would recommend. ⭐"
+    ],
+    quizQuestions: [
+      {q:'What is the most likely thing Karnafully will do today?', options:['Sleep','Eat cake','Ignore everyone\'s messages','All of the above 😂'], answer:3},
+      {q:'What is Avijit most likely doing while you play this?', options:['Coding','Eating','Laughing at this website','Pretending to be productive'], answer:2},
+      {q:"Pick Karnafully's birthday power.", options:['Turning snacks into cake','Causing tiny chaos','Summoning glitter','Mysteriously winning games'], answer:1},
+      {q:'Best birthday activity?', options:['Napping','Cake battle','Sending memes','All of the above'], answer:3},
+      {q:'If there is too much drama, what does Karnafully do?', options:['Laugh','Start drama','Run away','Make it worse on purpose'], answer:0}
+    ]
+  }
+</script>
+
+<!-- Canvas layers -->
+<canvas id="bgCanvas" class="canvas-full" aria-hidden></canvas>
+<canvas id="confettiCanvas" class="canvas-full" aria-hidden></canvas>
+<canvas id="fireworksCanvas" class="canvas-full" aria-hidden></canvas>
+
+<!-- App container -->
+<div id="app">
+  <!-- Stage: landing -->
+  <section id="stage-landing" class="stage landing">
+    <div class="stack center-vertical">
+      <div class="center">
+        <div class="glass center-vertical" style="padding:28px;max-width:760px;text-align:center">
+          <div class="title">🎉 WAIT...</div>
+          <div style="height:6px"></div>
+          <div class="sub" style="font-weight:800;font-size:22px"> <span id="nameUpper"></span>,</div>
+          <div class="muted" style="margin-top:8px;font-weight:700">YOU HAVE A PROBLEM.</div>
+
+          <div id="introLines" class="muted small" style="margin-top:18px"></div>
+
+          <div style="margin-top:22px">
+            <button id="enterBtn" class="glow-btn" aria-label="Enter the chaos">🎁 ENTER THE CHAOS</button>
+          </div>
+          <div class="small muted" style="margin-top:12px">Made with chaos by <strong id="creatorName"></strong> 😂</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stage: reveal/countdown -->
+  <section id="stage-reveal" class="stage" style="display:none">
+    <div style="text-align:center">
+      <div id="countDisplay" class="count">3</div>
+      <div id="revealText" style="margin-top:14px;opacity:0"></div>
+    </div>
+  </section>
+
+  <!-- Stage: quiz -->
+  <section id="stage-quiz" class="stage" style="display:none">
+    <div class="stack" style="width:100%;max-width:900px">
+      <div class="glass" style="padding:20px">
+        <h2>🎮 KARNAFULLY'S BIRTHDAY CHALLENGE</h2>
+        <p class="muted">Let's see if you can survive your own birthday.</p>
+      </div>
+      <div id="quizArea"></div>
+    </div>
+  </section>
+
+  <!-- Stage: cake game -->
+  <section id="stage-cake" class="stage" style="display:none">
+    <div class="stack" style="width:100%;max-width:900px">
+      <div class="glass" style="padding:16px;text-align:center">
+        <h2>🎂 CATCH THE CAKE</h2>
+        <p class="muted">Move mouse or touch to control the basket. Catch cakes, avoid bombs. Reach 10 points.</p>
+      </div>
+      <div class="glass" style="padding:12px">
+        <canvas id="cakeCanvas" style="width:100%;height:420px;background:linear-gradient(180deg,#23103a,#2b1142);border-radius:10px"></canvas>
+        <div style="display:flex;justify-content:space-between;margin-top:8px"><div id="cakeScore">Score: 0</div><div id="cakeLives">Lives: ❤️❤️❤️</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stage: fun area (dont press, mystery, random, reasons, cracker wall) -->
+  <section id="stage-fun" class="stage" style="display:none">
+    <div class="stack" style="width:100%;max-width:1100px">
+      <div class="grid">
+        <div class="glass">
+          <h3>⚠️ DO NOT PRESS</h3>
+          <p class="muted small">This button looks suspicious. Don't press it.</p>
+          <div style="margin-top:12px"><button id="dontBtn" class="glow-btn">DO NOT PRESS</button></div>
+        </div>
+
+        <div class="glass">
+          <h3>🎁 ONE LAST SURPRISE</h3>
+          <p class="muted small">A glowing mystery box. Go ahead.</p>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
+            <div style="width:64px;height:64px;border-radius:8px;background:linear-gradient(90deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center">🎁</div>
+            <div><button id="openBox" class="glow-btn">OPEN IT</button></div>
+          </div>
+          <div id="boxResult" style="margin-top:10px"></div>
+        </div>
+
+        <div class="glass">
+          <h3>🎰 RANDOM BIRTHDAY MESSAGE</h3>
+          <p class="muted small">Click to receive a randomized message.</p>
+          <div style="margin-top:12px;display:flex;gap:8px;align-items:center"><button id="spinMsg" class="glow-btn">🎲 SPIN</button><div id="randomMsg" class="muted small">No message yet.</div></div>
+        </div>
+
+        <div class="glass">
+          <h3>😂 WHY { /* name inserted via JS */ }</h3>
+          <div id="reasonCard" style="margin-top:10px;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px"></div>
+          <div style="text-align:right;margin-top:8px"><button id="nextReason" class="glow-btn">NEXT REASON →</button></div>
+        </div>
+      </div>
+
+      <div class="glass" style="padding:20px;text-align:center">
+        <h2>🎆 OKAY, TIME FOR CHAOS</h2>
+        <p class="muted">Click anywhere on the page to make crackers explode. I dare you.</p>
+        <div style="margin-top:12px"><button id="toFireworks" class="glow-btn">Go to Firework Sky</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stage: fireworks sky overlay controlled by fireworks canvas; we reuse same full-screen canvas -->
+  <section id="stage-final" class="stage" style="display:none">
+    <div class="stack center-vertical" style="max-width:820px">
+      <div class="glass" style="text-align:center;padding:22px">
+        <h2 style="font-size:34px">Okay <span id="finalNameShort"></span>... Enough chaos for today.</h2>
+        <h1 style="font-size:42px;margin-top:12px">🎂 HAPPY BIRTHDAY! 🎂</h1>
+        <pre style="text-align:left;white-space:pre-wrap;margin-top:12px;color:#f8f8f8;opacity:0.95;line-height:1.5">Wishing you an amazing year ahead.
+✨ good health
+✨ good friends
+✨ great memories
+✨ lots of laughter
+✨ unlimited cake
+✨ and absolutely zero unnecessary drama
+
+Have an amazing birthday!
+
+— <span id="finalCreator"></span></pre>
+        <div style="margin-top:12px"><button id="restartBtn" class="glow-btn">Restart Chaos</button></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ---------- Utility & canvas init ---------- */
+const bgCanvas = document.getElementById('bgCanvas');
+const confCanvas = document.getElementById('confettiCanvas');
+const fireCanvas = document.getElementById('fireworksCanvas');
+const dpr = Math.max(1, window.devicePixelRatio || 1);
+function fit(c){ c.width = innerWidth * dpr; c.height = innerHeight * dpr; c.style.width = innerWidth+'px'; c.style.height = innerHeight+'px'; const ctx = c.getContext('2d'); if(ctx) ctx.setTransform(dpr,0,0,dpr,0,0); }
+[bgCanvas, confCanvas, fireCanvas].forEach(fit);
+window.addEventListener('resize', ()=>[bgCanvas,confCanvas,fireCanvas].forEach(fit));
+
+const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* simple background stars/particles */
+(function bg(){ const c=bgCanvas, ctx=c.getContext('2d'); let particles=[]; const isMobile=/Mobi|Android/i.test(navigator.userAgent); const count = isMobile?30:80; for(let i=0;i<count;i++){ particles.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.6+0.4,op:Math.random()*0.6+0.1}) }
+  function draw(){ ctx.clearRect(0,0,innerWidth,innerHeight); for(let p of particles){ ctx.beginPath(); ctx.fillStyle=`rgba(255,255,255,${p.op})`; ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); } requestAnimationFrame(draw); }
+  if(!prefersReduced) draw(); else ctx.clearRect(0,0,innerWidth,innerHeight);
+})();
+
+/* ---------- Confetti system ---------- */
+const confCtx = confCanvas.getContext('2d'); let confettiParts = [];
+function triggerConfetti(count=120){ const isMobile=/Mobi|Android/i.test(navigator.userAgent); const total = isMobile?Math.min(60,count):count; for(let i=0;i<total;i++){ confettiParts.push({ x: Math.random()*innerWidth, y: -20 + Math.random()*innerHeight*0.2, vx: (Math.random()-0.5)*6, vy: Math.random()*-5, vr: (Math.random()-0.5)*0.2, rot: Math.random()*Math.PI, size:Math.random()*8+6, color:`hsl(${Math.floor(Math.random()*360)},80%,60%)` }) }
+}
+(function confLoop(){ if(prefersReduced) return; confCtx.clearRect(0,0,innerWidth,innerHeight); for(let i=confettiParts.length-1;i>=0;i--){ const p=confettiParts[i]; p.vy += 0.06; p.x += p.vx; p.y += p.vy; p.rot += p.vr; confCtx.save(); confCtx.translate(p.x,p.y); confCtx.rotate(p.rot); confCtx.fillStyle=p.color; confCtx.fillRect(-p.size/2,-p.size/2,p.size,p.size); confCtx.restore(); if(p.y>innerHeight+60) confettiParts.splice(i,1); } requestAnimationFrame(confLoop); })();
+
+/* ---------- Fireworks system ---------- */
+const fireCtx = fireCanvas.getContext('2d'); let fireworks = [];
+function launchFirework(x){ const hue = Math.random()*360; const p = { x, y: innerHeight, vx: (Math.random()-0.5)*2, vy: -(Math.random()*6+8), color:`hsl(${hue},80%,60%)`, explodeAt: Math.random()*0.4+0.25 }; fireworks.push(p); }
+(function fireLoop(){ if(prefersReduced) return; fireCtx.clearRect(0,0,innerWidth,innerHeight); for(let i=fireworks.length-1;i>=0;i--){ const f=fireworks[i]; f.vy += 0.12; f.x += f.vx; f.y += f.vy; fireCtx.fillStyle = f.color; fireCtx.beginPath(); fireCtx.arc(f.x,f.y,2,0,Math.PI*2); fireCtx.fill(); if(f.vy > - (innerHeight * f.explodeAt)){ // explode
+    for(let k=0;k<40;k++){ const angle=Math.random()*Math.PI*2; const speed=Math.random()*4+1; fireworks.push({x:f.x,y:f.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,color:f.color,life:Math.random()*60+40}); }
+    fireworks.splice(i,1);
+  }}
+  // particles
+  for(let i=fireworks.length-1;i>=0;i--){ const p=fireworks[i]; if(p.life!==undefined){ p.vy += 0.06; p.x += p.vx; p.y += p.vy; p.life -=1; fireCtx.fillStyle = p.color; fireCtx.beginPath(); fireCtx.arc(p.x,p.y,2,0,Math.PI*2); fireCtx.fill(); if(p.life<=0) fireworks.splice(i,1); } }
+  requestAnimationFrame(fireLoop);
+})();
+
+/* ---------- UI flow ---------- */
+const stage = {landing:document.getElementById('stage-landing'), reveal:document.getElementById('stage-reveal'), quiz:document.getElementById('stage-quiz'), cake:document.getElementById('stage-cake'), fun:document.getElementById('stage-fun'), final:document.getElementById('stage-final') };
+function show(s){ Object.values(stage).forEach(el=>el.style.display='none'); s.style.display='flex'; window.scrollTo({top:0,behavior:'smooth'}); }
+
+// insert names
+document.getElementById('nameUpper').innerText = CFG.birthdayGirl.toUpperCase();
+document.getElementById('creatorName').innerText = CFG.creator; document.getElementById('finalNameShort').innerText = CFG.birthdayGirl.split(' ')[0]; document.getElementById('finalCreator').innerText = CFG.creator;
+
+// landing intro lines (typed reveal)
+(function showIntroLines(){ const node = document.getElementById('introLines'); const lines = [CFG.introMessage, 'And unfortunately... Avijit made you a website.']; let i=0; function step(){ if(i<lines.length){ node.innerText = lines[i]; i++; setTimeout(step, 1400); } } step(); })();
+
+// Enter button -> reveal countdown
+document.getElementById('enterBtn').addEventListener('click', ()=>{ show(stage.reveal); // start countdown
+  let c=3; const display = document.getElementById('countDisplay'); const revealText = document.getElementById('revealText'); display.innerText=c; const t = setInterval(()=>{ c--; if(c>0) display.innerText = c; else { clearInterval(t); // GO
+        display.style.fontSize='28px'; display.innerHTML = `🎉 HAPPY BIRTHDAY <strong>${CFG.birthdayGirl.split(' ')[0].toUpperCase()}!</strong> 🎉`; revealText.style.opacity=1; revealText.innerText = `A little birthday chaos, courtesy of ${CFG.creator}. 😎`; triggerConfetti(140); setTimeout(()=>{ show(stage.quiz); startQuiz(); }, 1200); } }, 900); });
+
+/* ---------- Quiz ---------- */
+function startQuiz(){ const area = document.getElementById('quizArea'); area.innerHTML = ''; let idx=0, score=0; function render(){ area.innerHTML=''; if(idx >= CFG.quizQuestions.length){ // show result
+    const total = CFG.quizQuestions.length; const label = score===total? '🏆 LEGENDARY' : score>=3? '😎 NOT BAD' : score>=1? '💀 CONCERNING' : '🚨 ABSOLUTE CHAOS'; area.innerHTML = `<div class="glass" style="padding:20px;text-align:center"><h3>${label}</h3><p class="muted">Score: ${score} / ${total}</p><p class="muted">${score===total?"Okay Karnafully, you officially know everything." : score>=3?"You survived." : score>=1?"Maybe we should restart your birthday." : "How is this even possible? 😂"}</p><div style="margin-top:12px"><button id="quizContinue" class="glow-btn">🎁 CONTINUE</button></div></div>`; document.getElementById('quizContinue').addEventListener('click', ()=>{ show(stage.cake); initCakeGame(); }); return; }
+    const q = CFG.quizQuestions[idx]; const card = document.createElement('div'); card.className='glass'; card.style.padding='16px'; card.innerHTML = `<h3>${idx+1}. ${q.q}</h3><div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">${q.options.map((o,i)=>`<button class="optBtn" data-i="${i}" style="text-align:left;padding:10px;border-radius:8px;background:rgba(255,255,255,0.02);border:none;color:inherit">${String.fromCharCode(65+i)}. ${o}</button>`).join('')}</div>`; area.appendChild(card); Array.from(card.querySelectorAll('.optBtn')).forEach(b=>b.addEventListener('click',()=>{ const chosen=Number(b.dataset.i); const correct = chosen === q.answer; if(correct) { score++; flashMessage('🎉 CORRECT! Okay, maybe you do know yourself.'); triggerConfetti(60);} else { flashMessage('💀 WRONG. We need to have a serious conversation.'); }
+      idx++; setTimeout(render, 700);
+    })); }
+  render(); }
+
+function flashMessage(msg){ const el = document.createElement('div'); el.className='glass'; el.style.padding='8px'; el.style.position='fixed'; el.style.left='50%'; el.style.transform='translateX(-50%)'; el.style.top='20px'; el.innerText = msg; document.body.appendChild(el); setTimeout(()=>el.remove(),900); }
+
+/* ---------- Cake catcher game ---------- */
+function initCakeGame(){ const canvas = document.getElementById('cakeCanvas'); const ctx = canvas.getContext('2d'); function fitCanvas(){ canvas.width = canvas.clientWidth * dpr; canvas.height = canvas.clientHeight * dpr; ctx.setTransform(dpr,0,0,dpr,0,0); }
+  fitCanvas(); window.addEventListener('resize', fitCanvas);
+  let score=0, lives=3; const isMobile=/Mobi|Android/i.test(navigator.userAgent); let mouseX=innerWidth/2; const basket = {w:80,h:28}; const items=[]; let frame=0; function spawn(){ const type = Math.random()<0.12? 'bomb':'cake'; items.push({x: Math.random()*(canvas.clientWidth-40)+20, y:-20, vy: Math.random()*1.5 + 1.2, type}); }
+  function loop(){ ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight); // basket position
+    const bX = Math.max(10, Math.min(canvas.clientWidth - basket.w - 10, mouseX - basket.w/2)); ctx.fillStyle='#FFE1A8'; ctx.fillRect(bX, canvas.clientHeight - 60, basket.w, basket.h);
+    // items
+    for(let i=items.length-1;i>=0;i--){ const it = items[i]; it.y += it.vy; ctx.fillStyle = it.type==='cake'? '#ff9ad3':'#444'; ctx.beginPath(); ctx.arc(it.x, it.y, it.type==='cake'?12:10,0,Math.PI*2); ctx.fill(); if(it.y > canvas.clientHeight - 60 && it.x > bX && it.x < bX + basket.w){ if(it.type==='cake'){ score++; document.getElementById('cakeScore').innerText = 'Score: '+score } else { score = Math.max(0, score-2); document.getElementById('cakeScore').innerText = 'Score: '+score } items.splice(i,1);} else if(it.y > canvas.clientHeight + 20){ if(it.type==='cake'){ lives--; document.getElementById('cakeLives').innerText='Lives: '+'❤️'.repeat(lives);} items.splice(i,1); } }
+    frame++; if(frame > (isMobile?30:20)){ spawn(); frame=0; }
+    if(score>=10){ triggerConfetti(160); setTimeout(()=>{ show(stage.fun); },800); return; }
+    if(lives<=0){ // reset
+      score=0; lives=3; document.getElementById('cakeScore').innerText='Score: 0'; document.getElementById('cakeLives').innerText='Lives: ❤️❤️❤️'; items.length=0;
+    }
+    requestAnimationFrame(loop);
+  }
+  loop(); window.addEventListener('mousemove', e=>mouseX = e.clientX - canvas.getBoundingClientRect().left); window.addEventListener('touchmove', e=>{ if(e.touches[0]) mouseX = e.touches[0].clientX - canvas.getBoundingClientRect().left },{passive:true}); }
+
+/* ---------- DON'T PRESS button ---------- */
+let dontCount=0; document.getElementById('dontBtn').addEventListener('click', ()=>{ dontCount++; const btn=document.getElementById('dontBtn'); if(dontCount===1) btn.innerText='I told you not to press it.'; else if(dontCount===2) btn.innerText='Seriously?'; else if(dontCount===3) btn.innerText='You really have no self-control. 😂'; else if(dontCount>=4){ btn.innerText='FINE. HAPPY BIRTHDAY KARNAFULLY! 🎉'; triggerConfetti(220); // small screen shake
+  document.documentElement.style.transform='translateX(6px)'; setTimeout(()=>document.documentElement.style.transform='',180); } });
+
+/* ---------- Mystery box ---------- */
+document.getElementById('openBox').addEventListener('click', ()=>{ const out = document.getElementById('boxResult'); out.innerText='Opening...'; setTimeout(()=>{ triggerConfetti(120); out.innerHTML = '🎉 SURPRISE!\nYou just unlocked... ABSOLUTELY NOTHING. 😂\nOkay fine. You unlocked a birthday wish.\n\nHappy Birthday, '+CFG.birthdayGirl+'!'; },700); });
+
+/* ---------- Random message ---------- */
+document.getElementById('spinMsg').addEventListener('click', ()=>{ const msg = CFG.randomMessages[Math.floor(Math.random()*CFG.randomMessages.length)]; document.getElementById('randomMsg').innerText = msg; triggerConfetti(40); });
+
+/* ---------- Reasons ---------- */n
+let reasonIndex=0; function renderReason(){ document.getElementById('reasonCard').innerHTML = `<div style="font-size:14px;color:#fff">Reason #${String(reasonIndex+1).padStart(2,'0')}</div><div style="margin-top:8px;font-weight:700">${CFG.reasons[reasonIndex]}</div>`; }
+renderReason(); document.getElementById('nextReason').addEventListener('click', ()=>{ reasonIndex = (reasonIndex+1)%CFG.reasons.length; renderReason(); });
+
+/* ---------- Page-wide click cracker wall ---------- */
+let clickCount=0; document.addEventListener('click', (e)=>{ // limit when on specific canvas interactions? It's fine
+  // create a small cracker burst at cursor
+  if(prefersReduced) return; clickCount++; const x = e.clientX, y = e.clientY; // spawn small confetti
+  for(let i=0;i<16;i++){ confettiParts.push({ x, y, vx:(Math.random()-0.5)*6, vy:(Math.random()-0.7)*6, vr:(Math.random()-0.5)*0.3, rot:Math.random()*Math.PI, size:Math.random()*6+4, color:`hsl(${Math.floor(Math.random()*360)},80%,60%)` }) }
+  if(clickCount>18){ // mega mode
+    clickCount=0; triggerConfetti(220); for(let i=0;i<8;i++) setTimeout(()=>launchFirework(Math.random()*innerWidth), i*300);
+  }
+});
+
+/* ---------- Firework sky navigation ---------- */
+document.getElementById('toFireworks').addEventListener('click', ()=>{ // make full-screen fireworks; allow clicking to launch
+  show(stage.final); // use final stage and let user click to launch; additionally show overlay info
+  const info = document.createElement('div'); info.className='firework-overlay'; info.innerHTML = `<div style="text-align:center;color:white"><h2 style="font-size:28px">🌌 Firework Sky</h2><p class="muted">Click anywhere to launch a firework 🎆</p><div style="margin-top:12px"><button id="finishSky" class="glow-btn">Finish Sky</button></div></div>`; document.body.appendChild(info);
+  function onClick(e){ launchFirework(e.clientX); }
+  window.addEventListener('click', onClick);
+  document.getElementById('finishSky').addEventListener('click', ()=>{ window.removeEventListener('click', onClick); info.remove(); triggerConfetti(220); });
+});
+
+/* ---------- Final stage controls ---------- */
+document.getElementById('restartBtn').addEventListener('click', ()=>{ location.reload(); });
+
+/* ---------- Optional music support ---------- */
+let audio;
+(function initAudio(){ audio = new Audio('music/birthday.mp3'); audio.loop = true; audio.preload = 'none'; audio.addEventListener('error', ()=>{/* missing file - no controls */}); // do not autoplay
+  // small play/pause control
+  const ctrl = document.createElement('div'); ctrl.style.position='fixed'; ctrl.style.top='12px'; ctrl.style.left='12px'; ctrl.style.zIndex=80; const btn = document.createElement('button'); btn.className='glow-btn'; btn.style.padding='8px'; btn.innerText='🎵 PLAY'; btn.addEventListener('click', ()=>{ if(audio.paused){ audio.play().catch(()=>{}); btn.innerText='🔇 PAUSE'; } else { audio.pause(); btn.innerText='🎵 PLAY'; } }); ctrl.appendChild(btn); document.body.appendChild(ctrl);
+})();
+
+/* ---------- small helper: fireworks on click in fireworks canvas area ---------- */
+fireCanvas.addEventListener('click',(e)=>{ launchFirework(e.clientX); });
+
+/* ---------- accessibility / initial focus ---------- */
+document.getElementById('enterBtn').focus();
+
+/* ---------- end ---------- */
+</script>
+</body>
+</html>
